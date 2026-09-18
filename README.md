@@ -33,7 +33,7 @@ performance.
 
 ### 1. MySQL `SKIP LOCKED` (The Modern RDBMS Approach)
 
-- **How it works:** Uses `SELECT ... FOR UPDATE SKIP LOCKED` with `READ_COMMITTED isolation. The database engine
+- **How it works:** Uses `SELECT ... FOR UPDATE SKIP LOCKED` with `READ_COMMITTED` isolation. The database engine
   natively
   locks a row for one transaction and immediately serves the next unlocked row to the next concurrent worker.
 - **Pros:** Zero external infrastructure, eliminates lock contention, lightning-fast row allocation.
