@@ -8,7 +8,7 @@ import java.util.Optional;
 
 public interface JobRepository extends JpaRepository<Job, Long> {
 
-    int countByStatus(Job.Status status);
+    boolean existsByStatus(Job.Status status);
 
     @Query(value = "SELECT * FROM jobs WHERE status = 'PENDING' ORDER BY id LIMIT 1", nativeQuery = true)
     Optional<Job> findNextJobStandard();

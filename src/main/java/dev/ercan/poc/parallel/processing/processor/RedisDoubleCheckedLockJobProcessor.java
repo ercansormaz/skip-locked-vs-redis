@@ -13,42 +13,43 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class RedisDoubleCheckedLockJobProcessor implements JobProcessor {
 
-    private final JobRepository jobRepository;
-    private final StringRedisTemplate redisTemplate;
+  private final JobRepository jobRepository;
+  private final StringRedisTemplate redisTemplate;
 
-    @Override
-    public boolean processNextJob() {
-        Optional<Job> jobOpt = jobRepository.findNextJobStandard();
-        if (jobOpt.isEmpty()) return false;
+  @Override
+  public boolean processNextJob() {
+    Optional<Job> jobOpt = jobRepository.findNextJobStandard();
+    if (jobOpt.isEmpty()) {
+      return false;
+    }
 
-        Job job = jobOpt.get();
-        String lockKey = "lock:job:" + job.getId();
+    Job job = jobOpt.get();
+    String lockKey = "lock:job:" + job.getId();
 
-        Boolean acquired = redisTemplate.opsForValue()
-                .setIfAbsent(lockKey, "LOCKED", Duration.ofSeconds(30));
+    Boolean acquired = redisTemplate.opsForValue().setIfAbsent(lockKey, "LOCKED", Duration.ofSeconds(30));
 
-        if (Boolean.TRUE.equals(acquired)) {
-            try {
-                // double check
-                Job freshJob = jobRepository.findById(job.getId()).orElse(null);
+    if (Boolean.TRUE.equals(acquired)) {
+      try {
+        // double check
+        Job freshJob = jobRepository.findById(job.getId()).orElse(null);
 
-                if (freshJob == null || !Job.Status.PENDING.equals(freshJob.getStatus())) {
-                    return false;
-                }
-
-                job.setStatus(Job.Status.COMPLETED);
-                jobRepository.save(job);
-                return true;
-            } finally {
-                redisTemplate.delete(lockKey);
-            }
+        if (freshJob == null || !Job.Status.PENDING.equals(freshJob.getStatus())) {
+          return false;
         }
 
-        return false;
+        freshJob.setStatus(Job.Status.COMPLETED);
+        jobRepository.save(freshJob);
+        return true;
+      } finally {
+        redisTemplate.delete(lockKey);
+      }
     }
 
-    @Override
-    public JobProcessorType getJobProcessorType() {
-        return JobProcessorType.REDIS_DOUBLE_CHECKED;
-    }
+    return false;
+  }
+
+  @Override
+  public JobProcessorType getJobProcessorType() {
+    return JobProcessorType.REDIS_DOUBLE_CHECKED;
+  }
 }

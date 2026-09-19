@@ -13,26 +13,28 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class SkipLockedJobProcessor implements JobProcessor {
 
-    private final JobRepository jobRepository;
+  private final JobRepository jobRepository;
 
-    @Override
-    @Transactional(isolation = Isolation.READ_COMMITTED)
-    public boolean processNextJob() {
-        Optional<Job> jobOpt = jobRepository.findNextJobSkipLocked();
+  @Override
+  @Transactional(isolation = Isolation.READ_COMMITTED)
+  public boolean processNextJob() {
+    Optional<Job> jobOpt = jobRepository.findNextJobSkipLocked();
 
-        if (jobOpt.isEmpty()) return false;
-
-        Job job = jobOpt.get();
-        job.setStatus(Job.Status.COMPLETED);
-        jobRepository.save(job);
-
-        return true;
+    if (jobOpt.isEmpty()) {
+      return false;
     }
 
-    @Override
-    public JobProcessorType getJobProcessorType() {
-        return JobProcessorType.SKIP_LOCKED;
-    }
+    Job job = jobOpt.get();
+    job.setStatus(Job.Status.COMPLETED);
+    jobRepository.save(job);
+
+    return true;
+  }
+
+  @Override
+  public JobProcessorType getJobProcessorType() {
+    return JobProcessorType.SKIP_LOCKED;
+  }
 
 
 }
